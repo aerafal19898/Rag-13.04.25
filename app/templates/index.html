@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Sanctions RAG - DeepSeek R1 Distill Llama 70B</title>
+    <!-- Load React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Load Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Markdown parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Load highlight.js for code highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Toast notification styling */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(20px); }
+        }
+        
+        /* Drag and drop styling */
+        .drag-over {
+            background-color: #4a5568 !important;
+            border: 2px dashed #90cdf4 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-72 bg-gray-800 text-white flex flex-col">
+            <!-- Logo and title -->
+            <div class="p-4 border-b border-gray-700 flex flex-col items-center">
+                <h1 class="text-xl font-bold mb-2">MimIA</h1>
+                <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+                    <img id="app-logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="max-w-full max-h-full">
+                </div>
+            </div>
+            
+            <!-- New Chat Button -->
+            <div class="p-4 border-b border-gray-700">
+                <button id="new-chat-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    New Chat
+                </button>
+            </div>
+            
+            <!-- Folders and Chats -->
+            <div class="p-4 border-b border-gray-700">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">Folders & Chats</h2>
+                    <button id="new-folder-btn" class="text-gray-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+                <div id="folders-container" class="space-y-2 overflow-y-auto max-h-96">
+                    <!-- Folders with their chats will be nested here -->
+                </div>
+            </div>
+            
+            <!-- Tools -->
+            <div class="p-4 mt-auto border-t border-gray-700">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-2">Tools</h2>
+                <div class="space-y-2">
+                    <button onclick="viewDatasets()" class="w-full text-left px-4 py-2 rounded hover:bg-gray-700 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                        Datasets
+                    </button>
+                    <button onclick="processDocuments()" class="w-full text-left px-4 py-2 rounded hover:bg-gray-700 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Upload Documents
+                    </button>
+                    <button onclick="submitFeedback()" class="w-full text-left px-4 py-2 rounded hover:bg-gray-700 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        </svg>
+                        Submit Feedback
+                    </button>
+                    <div class="mt-1 text-xs text-gray-400 px-2">
+                        <span class="italic">Note: Dataset names will be sanitized (no spaces or special characters)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden bg-gray-100">
+            <!-- Header -->
+            <div class="bg-white shadow-sm p-4 flex justify-between items-center">
+                <div class="flex items-center">
+                    <h2 id="current-chat-title" class="text-xl font-semibold">New Chat</h2>
+                    <button id="rename-chat-btn" class="ml-2 text-gray-400 hover:text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-600 flex items-center">
+                        Dataset: 
+                        <span id="current-dataset-indicator" class="font-semibold text-blue-700 mx-1">EU-Sanctions</span>
+                        <span id="dataset-count-badge" class="hidden ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            0 documents
+                        </span>
+                        <button onclick="viewDatasets()" class="ml-2 text-xs text-blue-600 hover:text-blue-800 underline">Change</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat content -->
+            <div class="flex-1 overflow-y-auto p-4" id="chat-container">
+                <div id="chat-messages" class="space-y-4 pb-20">
+                    <!-- Messages will appear here -->
+                    <div class="flex justify-center my-20">
+                        <div class="text-center max-w-md">
+                            <h3 class="text-xl font-bold mb-2">Welcome to the Legal Sanctions RAG System</h3>
+                            <p class="text-gray-600 mb-4">Ask questions about international sanctions regulations, using your uploaded documents as reference material.</p>
+                            <p class="text-sm text-gray-500">Powered by DeepSeek R1 Distill Llama 70B</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input -->
+            <div class="bg-white p-4 border-t">
+                <form id="chat-form" class="relative">
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        class="w-full border rounded-lg px-4 py-3 pr-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ask a question about international sanctions..."
+                    >
+                    <button 
+                        type="submit"
+                        class="absolute right-2 top-2 bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simple non-React JavaScript
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatMessages = document.getElementById('chat-messages');
+        
+        // State
+        let currentDataset = 'EU-Sanctions';
+        let currentChatId = null;
+        let folders = [];
+        let chats = [];
+        
+        // Default datasets that can't be deleted
+        const DEFAULT_DATASETS = [
+            {"name": "EU-Sanctions", "description": "European Union sanctions regulations and guidelines"},
+            {"name": "US-Sanctions", "description": "United States sanctions regulations and guidelines"},
+            {"name": "UN-Sanctions", "description": "United Nations sanctions regulations and guidelines"}
+        ];
+        
+        // DOM elements
+        const foldersContainer = document.getElementById('folders-container');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const newFolderBtn = document.getElementById('new-folder-btn');
+        const currentChatTitle = document.getElementById('current-chat-title');
+        
+        // Get the last active chat ID from the server (if it exists)
+        const lastActiveChatId = '{{ last_active_chat|default("None") }}' !== 'None' ? '{{ last_active_chat|default("None") }}' : null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Hide rename button initially (will show when a chat is selected)
+            document.getElementById('rename-chat-btn').style.display = 'none';
+            
+            await loadFolders();
+            await loadChats();
+            
+            // If we have a last active chat, try to load it
+            if (lastActiveChatId) {
+                try {
+                    // First check if the chat exists
+                    const chatExists = chats.some(chat => chat.id === lastActiveChatId);
+                    
+                    if (chatExists) {
+                        await loadChat(lastActiveChatId);
+                    } else {
+                        console.log('Last active chat not found, creating new chat');
+                        createNewChat();
+                    }
+                } catch (error) {
+                    console.error('Error loading last active chat:', error);
+                    // If we can't load the last chat, create a new one
+                    createNewChat();
+                }
+            } else {
+                // Otherwise just create a new chat
+                createNewChat();
+            }
+            
+            // Add event listener for the rename button
+            document.getElementById('rename-chat-btn').addEventListener('click', renameChatPrompt);
+        });
+        
+        // Event listeners
+        newChatBtn.addEventListener('click', createNewChat);
+        newFolderBtn.addEventListener('click', createNewFolder);
+        
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const message = userInput.value.trim();
+            if (!message) return;
+            
+            // Clear input
+            userInput.value = '';
+            
+            // Create a chat if we don't have one
+            if (!currentChatId) {
+                await createNewChat();
+            }
+            
+            // Add user message to UI
+            addMessage('user', message);
+            
+            try {
+                // Show thinking animation before streaming starts
+                const thinkingId = showThinking();
+                
+                // Create a placeholder for the assistant message with a unique ID
+                const messageId = `streaming-message-${Date.now()}`;
+                const assistantDiv = document.createElement('div');
+                assistantDiv.className = 'flex justify-start';
+                assistantDiv.id = messageId;
+                
+                const assistantContent = document.createElement('div');
+                assistantContent.className = 'max-w-3xl rounded-lg p-4 bg-gray-100';
+                assistantContent.innerHTML = `<div id="${messageId}-content" class="streaming-content"></div>`;
+                
+                assistantDiv.appendChild(assistantContent);
+                
+                // Add placeholder to the chat but keep it hidden until we receive data
+                assistantDiv.style.display = 'none';
+                chatMessages.appendChild(assistantDiv);
+                window.scrollTo(0, document.body.scrollHeight);
+                
+                // Set up streaming connection
+                try {
+                    const contentContainer = document.getElementById(`${messageId}-content`);
+                    const streamUrl = `/api/chats/${currentChatId}/messages/stream`;
+                    
+                    // Create POST request to streaming endpoint
+                    const streamResponse = await fetch(streamUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            dataset: currentDataset
+                        }),
+                    });
+                    
+                    // Create reader for response body stream
+                    const reader = streamResponse.body.getReader();
+                    const decoder = new TextDecoder();
+                    let fullResponse = '';
+                    
+                    // Read stream chunks
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        // Decode chunk
+                        const chunk = decoder.decode(value, { stream: true });
+                        
+                        // Process SSE-formatted chunks
+                        const lines = chunk.split('\n\n');
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const eventData = line.slice(6);
+                                if (eventData) {
+                                    try {
+                                        const data = JSON.parse(eventData);
+                                        
+                                        // Handle text chunk
+                                        if (data.chunk) {
+                                            // This is our first chunk of data, remove thinking animation and show message
+                                            if (fullResponse === '') {
+                                                removeThinking(thinkingId);
+                                                document.getElementById(messageId).style.display = 'flex';
+                                            }
+                                            
+                                            fullResponse += data.chunk;
+                                            
+                                            // Apply streaming markdown formatting
+                                            let formattedResponse = fullResponse;
+                                            
+                                            // Enhance headings for streaming display
+                                            formattedResponse = formattedResponse
+                                                .replace(/# (SOURCES|ANALYSIS|APPLICABLE PROVISIONS|CONCLUSION):/g, 
+                                                    '### $1:')
+                                                .replace(/\n(SOURCES|ANALYSIS|APPLICABLE PROVISIONS|CONCLUSION):/g, 
+                                                    '\n### $1:');
+                                            
+                                            contentContainer.innerHTML = marked.parse(formattedResponse);
+                                            
+                                            // Style the sections as they appear
+                                            const sections = contentContainer.querySelectorAll('h3');
+                                            sections.forEach(section => {
+                                                section.className = 'text-lg font-bold mt-3 mb-2 text-blue-800';
+                                                
+                                                // Special styling for each section
+                                                if (section.textContent.includes('SOURCES')) {
+                                                    section.className += ' border-b pb-1 border-blue-300';
+                                                } else if (section.textContent.includes('ANALYSIS')) {
+                                                    section.className += ' border-b pb-1 border-blue-300';
+                                                } else if (section.textContent.includes('APPLICABLE PROVISIONS')) {
+                                                    section.className += ' border-b pb-1 border-blue-300';
+                                                } else if (section.textContent.includes('CONCLUSION')) {
+                                                    section.className += ' border-b pb-1 border-blue-300 mt-4';
+                                                }
+                                            });
+                                        }
+                                        
+                                        // Handle completion
+                                        if (data.done) {
+                                            // Make sure the thinking animation is removed
+                                            removeThinking(thinkingId);
+                                            // Make sure the message is visible
+                                            document.getElementById(messageId).style.display = 'flex';
+                                            // After streaming completes, fetch the context sources
+                                            fetchMessageContext(currentChatId, fullResponse);
+                                            break;
+                                        }
+                                        
+                                        // Handle error
+                                        if (data.error) {
+                                            // Make sure the thinking animation is removed
+                                            removeThinking(thinkingId);
+                                            // Make sure the message is visible
+                                            document.getElementById(messageId).style.display = 'flex';
+                                            contentContainer.innerHTML = `<div class="text-red-600">${data.error}</div>`;
+                                            break;
+                                        }
+                                    } catch (e) {
+                                        console.error('Error parsing streaming data:', e, eventData);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Auto-scroll as content grows
+                        window.scrollTo(0, document.body.scrollHeight);
+                    }
+                    
+                } catch (streamError) {
+                    console.error('Streaming error:', streamError);
+                    
+                    // Make sure to remove the thinking animation before fallback
+                    removeThinking(thinkingId);
+                    
+                    // Fallback to non-streaming if streaming fails
+                    const response = await fetch(`/api/chats/${currentChatId}/messages`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            dataset: currentDataset
+                        }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Remove the streaming placeholder
+                    document.getElementById(messageId).remove();
+                    
+                    // Add assistant message to chat the traditional way
+                    addMessage('assistant', data.response, data.context);
+                }
+                
+                // Reload chats to update timestamps
+                await loadChats();
+                
+                // Function to fetch and add context after streaming
+                async function fetchMessageContext(chatId, content) {
+                    try {
+                        const response = await fetch(`/api/chats/${chatId}`);
+                        const chat = await response.json();
+                        
+                        // Find the latest assistant message
+                        let latestMessage = null;
+                        for (let i = chat.messages.length - 1; i >= 0; i--) {
+                            if (chat.messages[i].role === 'assistant') {
+                                latestMessage = chat.messages[i];
+                                break;
+                            }
+                        }
+                        
+                        if (latestMessage && latestMessage.metadata && latestMessage.metadata.sources) {
+                            const sources = latestMessage.metadata.sources;
+                            
+                            // Format sources for display
+                            const sourceContext = sources.map(s => 
+                                `Source: ${s.source} (Page/Section: ${s.page})\nPreview: ${s.snippet}`
+                            ).join('\n\n');
+                            
+                            // Add the context to the streamed message
+                            const streamingMsg = document.getElementById(messageId);
+                            if (streamingMsg) {
+                                const messageContent = streamingMsg.querySelector('.max-w-3xl');
+                                
+                                // Add feedback buttons
+                                const feedbackDiv = document.createElement('div');
+                                feedbackDiv.className = 'mt-3 flex items-center';
+                                feedbackDiv.innerHTML = `
+                                    <span class="text-sm text-gray-500 mr-2">Was this helpful?</span>
+                                    <button class="feedback-btn text-sm mr-2 px-2 py-1 rounded border hover:bg-green-100" data-type="helpful" data-msgid="${latestMessage.id}">👍 Yes</button>
+                                    <button class="feedback-btn text-sm mr-2 px-2 py-1 rounded border hover:bg-red-100" data-type="not_helpful" data-msgid="${latestMessage.id}">👎 No</button>
+                                    <button class="feedback-btn text-sm px-2 py-1 rounded border hover:bg-yellow-100" data-type="inaccurate" data-msgid="${latestMessage.id}">⚠️ Inaccurate</button>
+                                `;
+                                
+                                // Add feedback button event listeners
+                                feedbackDiv.querySelectorAll('.feedback-btn').forEach(btn => {
+                                    btn.addEventListener('click', async (e) => {
+                                        const feedbackType = e.target.dataset.type;
+                                        const messageId = e.target.dataset.msgid;
+                                        
+                                        // Optionally prompt for additional feedback
+                                        let feedbackText = '';
+                                        if (feedbackType === 'inaccurate') {
+                                            feedbackText = prompt('Please explain what was inaccurate:') || '';
+                                        }
+                                        
+                                        // Submit feedback
+                                        await fetch('/api/feedback', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({
+                                                chat_id: currentChatId,
+                                                message_id: messageId,
+                                                feedback_type: feedbackType,
+                                                feedback_text: feedbackText
+                                            }),
+                                        });
+                                        
+                                        // Disable all feedback buttons and show confirmation
+                                        feedbackDiv.querySelectorAll('.feedback-btn').forEach(b => {
+                                            b.disabled = true;
+                                            b.classList.add('opacity-50');
+                                        });
+                                        
+                                        const thankMsg = document.createElement('span');
+                                        thankMsg.className = 'text-sm text-green-600 ml-2';
+                                        thankMsg.textContent = 'Thank you for your feedback!';
+                                        feedbackDiv.appendChild(thankMsg);
+                                    });
+                                });
+                                
+                                messageContent.appendChild(feedbackDiv);
+                                
+                                // Add context details
+                                const contextDetails = document.createElement('details');
+                                contextDetails.className = 'mt-4 text-sm';
+                                
+                                const summary = document.createElement('summary');
+                                summary.className = 'cursor-pointer text-blue-600 font-semibold';
+                                summary.textContent = '📄 View Reference Documents';
+                                
+                                const contextContent = document.createElement('div');
+                                contextContent.className = 'mt-2 p-3 bg-gray-100 rounded-lg border border-gray-300 text-gray-800 max-h-80 overflow-auto';
+                                
+                                // Format the context nicely
+                                const formattedContext = sourceContext.split('\n\n').map(source => {
+                                    return `<div class="mb-3 pb-3 border-b border-gray-200">
+                                            ${source.replace(/Source: ([^\n]+)/, '<strong class="text-blue-700">Source: $1</strong>')}
+                                            </div>`;
+                                }).join('');
+                                
+                                contextContent.innerHTML = formattedContext;
+                                contextDetails.appendChild(summary);
+                                contextDetails.appendChild(contextContent);
+                                
+                                messageContent.appendChild(contextDetails);
+                                
+                                // Remove the streaming ID to mark it as a regular message
+                                streamingMsg.removeAttribute('id');
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error fetching message context:', error);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                // Make sure to remove the thinking animation if it exists
+                if (thinkingId) {
+                    removeThinking(thinkingId);
+                }
+                addMessage('assistant', 'Sorry, there was an error processing your request.', null, true);
+            }
+        });
+        
+        function addMessage(role, content, context = null, isError = false, isSystem = false) {
+            // Safety check for content
+            if (!content || typeof content !== 'string') {
+                console.error('Invalid message content:', content);
+                content = 'Error: Could not display message content';
+                isError = true;
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = `max-w-3xl rounded-lg p-4 ${
+                role === 'user' 
+                    ? 'bg-blue-600 text-white' 
+                    : isError 
+                        ? 'bg-red-100 text-red-900' 
+                        : isSystem
+                            ? 'bg-green-100 text-green-900'
+                            : 'bg-gray-100'
+            }`;
+            
+            try {
+                // Apply special styling for structured format
+                if (role === 'assistant' && !isError && !isSystem) {
+                    // Enhance headings in the response
+                    const formattedContent = content
+                        .replace(/# (SOURCES|ANALYSIS|APPLICABLE PROVISIONS|CONCLUSION):/g, 
+                                '### $1:')
+                        .replace(/\n(SOURCES|ANALYSIS|APPLICABLE PROVISIONS|CONCLUSION):/g, 
+                                '\n### $1:');
+                    
+                    // Check if any formatted headings were created
+                    const hasFormattedHeadings = 
+                        formattedContent.includes('### SOURCES:') || 
+                        formattedContent.includes('### ANALYSIS:') || 
+                        formattedContent.includes('### APPLICABLE PROVISIONS:') || 
+                        formattedContent.includes('### CONCLUSION:');
+                    
+                    // If no headings were formatted, try to format as raw text
+                    if (!hasFormattedHeadings) {
+                        console.log('Message has no standard sections, displaying as raw text');
+                    }
+                    
+                    // Update content with formatted version
+                    content = formattedContent;
+                }
+                
+                // Parse markdown
+                messageContent.innerHTML = marked.parse(content);
+                
+                // Style the assistant message sections
+                if (role === 'assistant' && !isError && !isSystem) {
+                    // First check if there are any h3 elements (our formatted headers)
+                    const sections = messageContent.querySelectorAll('h3');
+                    
+                    if (sections.length > 0) {
+                        sections.forEach(section => {
+                            section.className = 'text-lg font-bold mt-3 mb-2 text-blue-800';
+                            
+                            // Special styling for each section
+                            if (section.textContent.includes('SOURCES')) {
+                                section.className += ' border-b pb-1 border-blue-300';
+                            } else if (section.textContent.includes('ANALYSIS')) {
+                                section.className += ' border-b pb-1 border-blue-300';
+                            } else if (section.textContent.includes('APPLICABLE PROVISIONS')) {
+                                section.className += ' border-b pb-1 border-blue-300';
+                            } else if (section.textContent.includes('CONCLUSION')) {
+                                section.className += ' border-b pb-1 border-blue-300 mt-4';
+                            }
+                        });
+                    } else {
+                        // If no sections were found, add a generic title
+                        const genericHeader = document.createElement('h3');
+                        genericHeader.className = 'text-lg font-bold mt-3 mb-2 text-blue-800 border-b pb-1 border-blue-300';
+                        genericHeader.textContent = 'Response:';
+                        messageContent.insertBefore(genericHeader, messageContent.firstChild);
+                    }
+                }
+            } catch (error) {
+                console.error('Error formatting message:', error);
+                messageContent.innerHTML = `<div class="text-red-600">Error formatting message: ${error.message}</div>`;
+                messageContent.innerHTML += `<div class="mt-2 p-2 bg-gray-200 rounded overflow-auto">${content}</div>`;
+            }
+            
+            // Add context if available
+            if (context) {
+                try {
+                    const contextDetails = document.createElement('details');
+                    contextDetails.className = 'mt-4 text-sm';
+                    
+                    const summary = document.createElement('summary');
+                    summary.className = 'cursor-pointer text-blue-600 font-semibold';
+                    summary.textContent = '📄 View Reference Documents';
+                    
+                    const contextContent = document.createElement('div');
+                    contextContent.className = 'mt-2 p-3 bg-gray-100 rounded-lg border border-gray-300 text-gray-800 max-h-80 overflow-auto';
+                    
+                    // Format the context nicely - with error handling
+                    try {
+                        // Check if context is a string
+                        if (typeof context === 'string') {
+                            const sourceChunks = context.split('\n\n');
+                            let formattedContext = '';
+                            
+                            // Format each chunk
+                            for (const source of sourceChunks) {
+                                if (source.trim()) {
+                                    formattedContext += `<div class="mb-3 pb-3 border-b border-gray-200">
+                                        ${source.replace(/Source: ([^\n]+)/, '<strong class="text-blue-700">Source: $1</strong>')}
+                                    </div>`;
+                                }
+                            }
+                            
+                            contextContent.innerHTML = formattedContext || 'No content available';
+                        } else {
+                            // If context is not a string (e.g., an array or object), format it differently
+                            console.log('Context is not a string:', context);
+                            contextContent.innerHTML = 'Context format not recognized';
+                        }
+                    } catch (error) {
+                        console.error('Error formatting context:', error);
+                        contextContent.innerHTML = 'Error displaying reference documents';
+                    }
+                    
+                    contextDetails.appendChild(summary);
+                    contextDetails.appendChild(contextContent);
+                    messageContent.appendChild(contextDetails);
+                } catch (error) {
+                    console.error('Error adding context:', error);
+                }
+            }
+            
+            // Add to DOM
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+            
+            // Add feedback buttons for assistant messages (non-error, non-system)
+            if (role === 'assistant' && !isError && !isSystem) {
+                try {
+                    // Create a unique ID for this message
+                    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Add feedback buttons
+                    const feedbackDiv = document.createElement('div');
+                    feedbackDiv.className = 'mt-3 flex items-center';
+                    feedbackDiv.innerHTML = `
+                        <span class="text-sm text-gray-500 mr-2">Was this helpful?</span>
+                        <button class="feedback-btn text-sm mr-2 px-2 py-1 rounded border hover:bg-green-100" data-type="helpful" data-msgid="${messageId}">👍 Yes</button>
+                        <button class="feedback-btn text-sm mr-2 px-2 py-1 rounded border hover:bg-red-100" data-type="not_helpful" data-msgid="${messageId}">👎 No</button>
+                        <button class="feedback-btn text-sm px-2 py-1 rounded border hover:bg-yellow-100" data-type="inaccurate" data-msgid="${messageId}">⚠️ Inaccurate</button>
+                    `;
+                    
+                    // Add feedback button event listeners
+                    feedbackDiv.querySelectorAll('.feedback-btn').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const feedbackType = e.target.dataset.type;
+                            const msgId = e.target.dataset.msgid;
+                            
+                            // Optionally prompt for additional feedback
+                            let feedbackText = '';
+                            if (feedbackType === 'inaccurate') {
+                                feedbackText = prompt('Please explain what was inaccurate:') || '';
+                            }
+                            
+                            try {
+                                // Submit feedback even though it won't actually be tied to a real message ID
+                                // This is just for UI feedback purposes in this example
+                                await fetch('/api/feedback', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        chat_id: currentChatId,
+                                        message_id: msgId,
+                                        feedback_type: feedbackType,
+                                        feedback_text: feedbackText
+                                    }),
+                                });
+                                
+                                // Disable all feedback buttons and show confirmation
+                                feedbackDiv.querySelectorAll('.feedback-btn').forEach(b => {
+                                    b.disabled = true;
+                                    b.classList.add('opacity-50');
+                                });
+                                
+                                const thankMsg = document.createElement('span');
+                                thankMsg.className = 'text-sm text-green-600 ml-2';
+                                thankMsg.textContent = 'Thank you for your feedback!';
+                                feedbackDiv.appendChild(thankMsg);
+                            } catch (error) {
+                                console.error('Error submitting feedback:', error);
+                                // Still provide visual confirmation even if the API call fails
+                                feedbackDiv.innerHTML = '<span class="text-sm text-green-600">Thank you for your feedback!</span>';
+                            }
+                        });
+                    });
+                    
+                    messageContent.appendChild(feedbackDiv);
+                } catch (error) {
+                    console.error('Error adding feedback buttons:', error);
+                }
+            }
+            
+            // Scroll to bottom
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+        
+        // Chat and folder functions
+        async function loadFolders() {
+            try {
+                const response = await fetch('/api/folders');
+                folders = await response.json();
+                await loadChats();  // This will trigger renderFoldersAndChats
+            } catch (error) {
+                console.error('Error loading folders:', error);
+            }
+        }
+        
+        async function loadChats(folderId = null) {
+            try {
+                // Always load all chats, we'll filter them in the UI as needed
+                const response = await fetch('/api/chats');
+                chats = await response.json();
+                renderFoldersAndChats();
+                
+                // If a folder ID was specified, simulate clicking on that folder
+                if (folderId) {
+                    // Make sure the folder's chats are visible
+                    const folderHeader = document.querySelector(`.folder-item[data-folder-id="${folderId}"]`);
+                    const folderChats = document.querySelector(`.folder-chats[data-folder-id="${folderId}"]`);
+                    
+                    if (folderHeader && folderChats) {
+                        // Make sure the folder is expanded
+                        folderChats.style.display = 'block';
+                        
+                        // Update the expand/collapse indicator
+                        const icon = folderHeader.querySelector('.folder-expand-icon');
+                        if (icon) {
+                            icon.textContent = '▼';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading chats:', error);
+            }
+        }
+        
+        async function createNewChat() {
+            try {
+                // Clear messages
+                chatMessages.innerHTML = '';
+                
+                // Reset title and hide rename button since there's nothing to rename yet
+                currentChatTitle.textContent = 'New Chat';
+                document.getElementById('rename-chat-btn').style.display = 'none';
+                
+                // Add welcome message
+                chatMessages.innerHTML = `
+                    <div class="flex justify-center my-20">
+                        <div class="text-center max-w-md">
+                            <h3 class="text-xl font-bold mb-2">New Chat</h3>
+                            <p class="text-gray-600 mb-4">Ask questions about international sanctions regulations.</p>
+                            <p class="text-sm text-gray-500">Using dataset: ${currentDataset}</p>
+                            <p class="text-xs text-gray-400">Powered by DeepSeek R1 Distill Llama 70B</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Create chat on server
+                const response = await fetch('/api/chats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: "New Chat",
+                        dataset: currentDataset
+                    }),
+                });
+                
+                const data = await response.json();
+                currentChatId = data.id;
+                currentChatTitle.textContent = 'New Chat';
+                
+                // Save the newly created chat as the last active chat
+                fetch('/api/save-last-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: currentChatId
+                    }),
+                }).catch(err => console.error('Error saving last chat:', err));
+                
+                // Reload chats
+                await loadChats();
+            } catch (error) {
+                console.error('Error creating chat:', error);
+            }
+        }
+        
+        async function loadChat(chatId) {
+            try {
+                // Get chat data
+                const response = await fetch(`/api/chats/${chatId}`);
+                const chat = await response.json();
+                
+                // Update state
+                currentChatId = chatId;
+                currentChatTitle.textContent = chat.title || 'Untitled Chat';
+                
+                // Make the rename button visible when a chat is loaded
+                document.getElementById('rename-chat-btn').style.display = 'block';
+                
+                if (chat.dataset) {
+                    currentDataset = chat.dataset;
+                    document.getElementById('current-dataset-indicator').textContent = currentDataset;
+                }
+                
+                // Save the active chat ID to the server session
+                fetch('/api/save-last-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId
+                    }),
+                }).catch(err => console.error('Error saving last chat:', err));
+                
+                // Clear and render messages
+                chatMessages.innerHTML = '';
+                
+                // Add messages
+                if (chat.messages && chat.messages.length > 0) {
+                    console.log('Loading messages:', chat.messages.length);
+                    
+                    // Debugging to check what's in the messages
+                    chat.messages.forEach((msg, index) => {
+                        console.log(`Message ${index}:`, {
+                            role: msg.role,
+                            content_length: msg.content ? msg.content.length : 0,
+                            has_metadata: !!msg.metadata,
+                            has_sources: msg.metadata && msg.metadata.sources ? msg.metadata.sources.length : 0
+                        });
+                        
+                        let context = null;
+                        let isError = false;
+                        let isSystem = false;
+                        let isStreaming = false;
+                        let isProcessing = false;
+                        
+                        // Make sure message has content
+                        if (!msg.content) {
+                            console.error('Message has no content:', msg);
+                            return; // Skip this message
+                        }
+                        
+                        if (msg.metadata) {
+                            if (msg.metadata.sources && Array.isArray(msg.metadata.sources)) {
+                                // Format sources
+                                context = msg.metadata.sources.map(s => 
+                                    `Source: ${s.source} (Page/Section: ${s.page || 0})\nPreview: ${s.snippet || 'No preview available'}`
+                                ).join('\n\n');
+                            }
+                            isError = !!msg.metadata.error;
+                            isSystem = msg.metadata.isSystem === true;
+                            isStreaming = !!msg.metadata.streaming;
+                            isProcessing = !!msg.metadata.processing;
+                        }
+                        
+                        // Handle messages that were still being processed when the session ended
+                        if (isProcessing || isStreaming) {
+                            console.log('Found interrupted streaming message:', msg.id);
+                            // It was a streaming message that got interrupted
+                            // Use a special message that indicates it was interrupted
+                            let streamingContent = msg.content;
+                            
+                            // If it's still just a placeholder, replace with a more helpful message
+                            if (streamingContent === "Generating response..." || 
+                                streamingContent === "Processing your request...") {
+                                streamingContent = "The response was interrupted. Please ask your question again.";
+                                isError = true;
+                            } else {
+                                // Append note that it was interrupted
+                                streamingContent += "\n\n[Response was interrupted]";
+                            }
+                            
+                            // Add the message to the UI
+                            addMessage(msg.role, streamingContent, context, isError, isSystem);
+                        } else {
+                            // Normal message - add to UI
+                            addMessage(msg.role, msg.content, context, isError, isSystem);
+                        }
+                    });
+                } else {
+                    // Add welcome message for empty chat
+                    chatMessages.innerHTML = `
+                        <div class="flex justify-center my-20">
+                            <div class="text-center max-w-md">
+                                <h3 class="text-xl font-bold mb-2">${chat.title || 'Untitled Chat'}</h3>
+                                <p class="text-gray-600 mb-4">Ask questions about international sanctions regulations.</p>
+                                <p class="text-sm text-gray-500">Using dataset: ${chat.dataset || currentDataset}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Highlight selected chat
+                document.querySelectorAll('.chat-item').forEach(el => {
+                    el.classList.remove('bg-gray-700');
+                    if (el.dataset.chatId === chatId) {
+                        el.classList.add('bg-gray-700');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading chat:', error);
+            }
+        }
+        
+        async function deleteChat(chatId) {
+            if (!confirm('Are you sure you want to delete this chat?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/chats/${chatId}`, {
+                    method: 'DELETE',
+                });
+                
+                const result = await response.json();
+                
+                if (currentChatId === chatId) {
+                    // If we have a next chat to navigate to
+                    if (result.next_chat) {
+                        loadChat(result.next_chat);
+                    } else {
+                        // Otherwise create a new chat
+                        currentChatId = null;
+                        createNewChat();
+                    }
+                }
+                
+                await loadChats();
+            } catch (error) {
+                console.error('Error deleting chat:', error);
+            }
+        }
+        
+        async function createNewFolder() {
+            const folderName = prompt('Enter folder name:');
+            if (!folderName) return;
+            
+            try {
+                await fetch('/api/folders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: folderName,
+                    }),
+                });
+                
+                await loadFolders();
+            } catch (error) {
+                console.error('Error creating folder:', error);
+            }
+        }
+        
+        async function deleteFolder(folderId) {
+            if (!confirm('Are you sure you want to delete this folder? Chats will be moved to the Default folder.')) {
+                return;
+            }
+            
+            try {
+                await fetch(`/api/folders/${folderId}`, {
+                    method: 'DELETE',
+                });
+                
+                await loadFolders();
+                await loadChats();
+            } catch (error) {
+                console.error('Error deleting folder:', error);
+            }
+        }
+        
+        async function moveChat(chatId, folderId) {
+            try {
+                await fetch(`/api/chats/${chatId}/move`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        folder_id: folderId,
+                    }),
+                });
+                
+                await loadChats();
+            } catch (error) {
+                console.error('Error moving chat:', error);
+            }
+        }
+        
+        function renderFoldersAndChats() {
+            foldersContainer.innerHTML = '';
+            
+            // Group chats by folder
+            const chatsByFolder = {};
+            
+            // Initialize with empty arrays for each folder
+            folders.forEach(folder => {
+                chatsByFolder[folder.id] = [];
+            });
+            
+            // Populate with chats
+            chats.forEach(chat => {
+                if (chatsByFolder[chat.folder_id]) {
+                    chatsByFolder[chat.folder_id].push(chat);
+                } else {
+                    // If folder doesn't exist (shouldn't happen, but just in case)
+                    chatsByFolder['default'].push(chat);
+                }
+            });
+            
+            // Render each folder with its chats
+            folders.forEach(folder => {
+                const folderChats = chatsByFolder[folder.id] || [];
+                
+                // Create folder container
+                const folderContainer = document.createElement('div');
+                folderContainer.className = 'folder-container mb-2';
+                folderContainer.dataset.folderId = folder.id;
+                
+                // Create folder header
+                const folderHeader = document.createElement('div');
+                folderHeader.className = 'flex items-center justify-between p-2 rounded hover:bg-gray-700 cursor-pointer folder-item';
+                folderHeader.dataset.folderId = folder.id;
+                
+                // Make the folder a drop target
+                folderHeader.addEventListener('dragover', handleDragOver);
+                folderHeader.addEventListener('dragleave', handleDragLeave);
+                folderHeader.addEventListener('drop', handleDrop);
+                
+                // Expand/collapse indicator
+                const expandIndicator = folderChats.length > 0 ? '▼' : '▶';
+                
+                folderHeader.innerHTML = `
+                    <div class="flex items-center flex-1">
+                        <span class="folder-expand-icon mr-1 text-xs">${expandIndicator}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        <span>${folder.name}</span>
+                        <span class="ml-2 text-xs text-gray-500">(${folderChats.length})</span>
+                    </div>
+                    ${folder.id !== 'default' ? `
+                        <button class="text-gray-400 hover:text-red-500 delete-folder-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    ` : ''}
+                `;
+                
+                // Create chats container
+                const chatsContainer = document.createElement('div');
+                chatsContainer.className = 'pl-6 mt-1 space-y-1 folder-chats';
+                chatsContainer.dataset.folderId = folder.id;
+                
+                // Toggle folder expansion
+                folderHeader.addEventListener('click', (e) => {
+                    // Ignore clicks on delete button
+                    if (e.target.closest('.delete-folder-btn')) return;
+                    
+                    const isVisible = chatsContainer.style.display !== 'none';
+                    chatsContainer.style.display = isVisible ? 'none' : 'block';
+                    
+                    // Update expand/collapse indicator
+                    const icon = folderHeader.querySelector('.folder-expand-icon');
+                    if (icon) {
+                        icon.textContent = isVisible ? '▶' : '▼';
+                    }
+                });
+                
+                // Delete folder button
+                const deleteBtn = folderHeader.querySelector('.delete-folder-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteFolder(folder.id);
+                    });
+                }
+                
+                // Add chats to this folder
+                if (folderChats.length === 0) {
+                    chatsContainer.innerHTML = '<div class="text-gray-500 text-xs p-2">No chats</div>';
+                } else {
+                    // Sort chats by updated_at (newest first)
+                    folderChats.sort((a, b) => b.updated_at - a.updated_at);
+                    
+                    folderChats.forEach(chat => {
+                        const chatEl = document.createElement('div');
+                        chatEl.className = `flex items-center justify-between p-2 rounded hover:bg-gray-700 cursor-pointer chat-item ${currentChatId === chat.id ? 'bg-gray-700' : ''}`;
+                        chatEl.dataset.chatId = chat.id;
+                        chatEl.dataset.folderId = chat.folder_id;
+                        
+                        // Make the chat draggable
+                        chatEl.draggable = true;
+                        chatEl.addEventListener('dragstart', handleDragStart);
+                        chatEl.addEventListener('dragend', handleDragEnd);
+                        
+                        // Add context menu for rename
+                        chatEl.addEventListener('contextmenu', handleChatContextMenu);
+                        
+                        // Format date
+                        const date = new Date(chat.updated_at * 1000);
+                        const formattedDate = date.toLocaleDateString();
+                        
+                        chatEl.innerHTML = `
+                            <div class="flex-1 overflow-hidden">
+                                <div class="text-sm font-medium truncate">${chat.title || 'Untitled Chat'}</div>
+                                <div class="text-xs text-gray-400">${formattedDate} · ${chat.message_count || 0} messages</div>
+                            </div>
+                            <div class="flex space-x-1">
+                                <button class="text-gray-400 hover:text-red-500 delete-chat-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        `;
+                        
+                        chatEl.addEventListener('click', () => loadChat(chat.id));
+                        
+                        // Delete chat button
+                        const deleteBtn = chatEl.querySelector('.delete-chat-btn');
+                        if (deleteBtn) {
+                            deleteBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                // First, visually remove the chat item for immediate feedback
+                                chatEl.remove();
+                                // Then actually delete it on the server
+                                deleteChat(chat.id);
+                            });
+                        }
+                        
+                        chatsContainer.appendChild(chatEl);
+                    });
+                }
+                
+                // Add folder header and chats container to folder container
+                folderContainer.appendChild(folderHeader);
+                folderContainer.appendChild(chatsContainer);
+                
+                // Add folder container to folders container
+                foldersContainer.appendChild(folderContainer);
+            });
+        }
+        
+        // Utility functions
+        function showLoading() {
+            const id = 'loading-' + Date.now();
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = id;
+            loadingDiv.className = 'flex justify-start';
+            
+            loadingDiv.innerHTML = `
+                <div class="bg-gray-100 rounded-lg p-4 max-w-3xl">
+                    <div class="flex space-x-2">
+                        <div class="w-3 h-3 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div class="w-3 h-3 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-3 h-3 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(loadingDiv);
+            window.scrollTo(0, document.body.scrollHeight);
+            return id;
+        }
+        
+        function showThinking() {
+            const id = 'thinking-' + Date.now();
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.id = id;
+            thinkingDiv.className = 'flex justify-start';
+            
+            thinkingDiv.innerHTML = `
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 max-w-3xl">
+                    <div class="flex items-center">
+                        <div class="mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <div class="text-blue-700 font-medium">Thinking...</div>
+                            <div class="text-gray-500 text-sm">Analyzing relevant documents and generating response</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(thinkingDiv);
+            window.scrollTo(0, document.body.scrollHeight);
+            return id;
+        }
+        
+        function removeLoading(id) {
+            const loadingElement = document.getElementById(id);
+            if (loadingElement) {
+                loadingElement.remove();
+            }
+        }
+        
+        function removeThinking(id) {
+            const thinkingElement = document.getElementById(id);
+            if (thinkingElement) {
+                thinkingElement.remove();
+            }
+        }
+        
+        function viewDatasets() {
+            // Fetch datasets from API
+            fetch('/api/datasets')
+                .then(response => response.json())
+                .then(datasets => {
+                    // Create a modal for dataset selection
+                    const modalOverlay = document.createElement('div');
+                    modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+                    
+                    const modalContent = document.createElement('div');
+                    modalContent.className = 'bg-white rounded-lg shadow-lg max-w-2xl w-full';
+                    
+                    // Current dataset indicator
+                    const currentDatasetText = document.createElement('div');
+                    currentDatasetText.className = 'p-4 bg-blue-100 rounded-t-lg flex justify-between items-center';
+                    currentDatasetText.innerHTML = `
+                        <div>
+                            <span class="font-semibold">Current dataset:</span>
+                            <span class="ml-2 text-blue-800 font-bold">${currentDataset}</span>
+                        </div>
+                        <button id="close-datasets-modal" class="text-gray-600 hover:text-gray-900">
+                            &times;
+                        </button>
+                    `;
+                    
+                    const datasetsList = document.createElement('div');
+                    datasetsList.className = 'p-6 max-h-96 overflow-y-auto';
+                    
+                    if (datasets.length === 0) {
+                        datasetsList.innerHTML = '<p class="text-gray-500">No datasets available</p>';
+                    } else {
+                        datasetsList.innerHTML = '<h2 class="text-xl font-bold mb-4">Available Datasets</h2>';
+                        
+                        const datasetGrid = document.createElement('div');
+                        datasetGrid.className = 'grid grid-cols-1 gap-4';
+                        
+                        datasets.forEach(dataset => {
+                            const datasetCard = document.createElement('div');
+                            datasetCard.className = `p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${dataset.name === currentDataset ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`;
+                            datasetCard.dataset.datasetName = dataset.name;
+                            datasetCard.dataset.isCustom = dataset.is_custom;
+                            
+                            datasetCard.innerHTML = `
+                                <h3 class="font-semibold text-lg">${dataset.name}</h3>
+                                <p class="text-gray-600 text-sm">${dataset.description || 'No description available'}</p>
+                                ${dataset.is_custom ? 
+                                    `<span class="inline-flex items-center px-2.5 py-0.5 mt-2 rounded-full text-xs font-medium ${dataset.document_count > 0 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                        ${dataset.document_count > 0 ? `${dataset.document_count} documents` : 'Empty dataset'}
+                                     </span>` : 
+                                    '<span class="inline-flex items-center px-2.5 py-0.5 mt-2 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Default</span>'
+                                }
+                            `;
+                            
+                            // Add right-click context menu for dataset management
+                            datasetCard.addEventListener('contextmenu', handleDatasetContextMenu);
+                            
+                            datasetCard.addEventListener('click', () => {
+                                // Set as current dataset
+                                currentDataset = dataset.name;
+                                
+                                // Update UI indicator
+                                document.getElementById('current-dataset-indicator').textContent = dataset.name;
+                                
+                                // Update count badge
+                                const countBadge = document.getElementById('dataset-count-badge');
+                                if (dataset.is_custom && dataset.document_count !== undefined) {
+                                    countBadge.textContent = `${dataset.document_count} documents`;
+                                    countBadge.className = `ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        dataset.document_count > 0 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                    }`;
+                                    countBadge.classList.remove('hidden');
+                                } else {
+                                    countBadge.classList.add('hidden');
+                                }
+                                
+                                // Add system message about dataset change
+                                addMessage('assistant', `Switched to dataset: ${dataset.name}`, null, false, true);
+                                
+                                // Close the modal
+                                document.body.removeChild(modalOverlay);
+                            });
+                            
+                            datasetGrid.appendChild(datasetCard);
+                        });
+                        
+                        datasetsList.appendChild(datasetGrid);
+                    }
+                    
+                    modalContent.appendChild(currentDatasetText);
+                    modalContent.appendChild(datasetsList);
+                    modalOverlay.appendChild(modalContent);
+                    document.body.appendChild(modalOverlay);
+                    
+                    // Add close button handler
+                    document.getElementById('close-datasets-modal').addEventListener('click', () => {
+                        document.body.removeChild(modalOverlay);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching datasets:', error);
+                    alert('Error loading datasets. Please try again.');
+                });
+        }
+        
+        function processDocuments() {
+            // Create a modal dialog for document upload
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'bg-white rounded-lg shadow-lg max-w-2xl w-full';
+            modalContent.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4">Process Documents</h2>
+                    
+                    <form id="document-upload-form">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 mb-2">Dataset Name</label>
+                            <input
+                                type="text"
+                                id="dataset-name"
+                                placeholder="Enter dataset name"
+                                class="w-full border rounded px-3 py-2"
+                                required
+                            />
+                            <p class="mt-1 text-xs text-gray-500">
+                                <i>Note:</i> Name will be sanitized - spaces and special characters will be replaced with hyphens
+                            </p>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-gray-700 mb-2">Upload Documents</label>
+                            <div id="drop-area" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                <div id="file-preview" class="mb-4 grid grid-cols-2 gap-2"></div>
+                                <p class="text-gray-500 mb-2">Drag and drop files here or</p>
+                                <input type="file" id="file-input" multiple accept=".pdf,.txt" class="hidden" />
+                                <button type="button" id="browse-button" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                    Browse Files
+                                </button>
+                                <p class="text-sm text-gray-500 mt-2">
+                                    Supported formats: PDF, TXT (max 10 files, 10MB each)
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-4">
+                            <button
+                                type="button"
+                                id="cancel-upload"
+                                class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                id="upload-button"
+                            >
+                                Process Documents
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Set up event listeners
+            const dropArea = modalContent.querySelector('#drop-area');
+            const fileInput = modalContent.querySelector('#file-input');
+            const browseButton = modalContent.querySelector('#browse-button');
+            const cancelButton = modalContent.querySelector('#cancel-upload');
+            const filePreview = modalContent.querySelector('#file-preview');
+            const uploadForm = modalContent.querySelector('#document-upload-form');
+            
+            // Track selected files
+            let selectedFiles = [];
+            
+            // Function to update file preview
+            function updateFilePreview() {
+                filePreview.innerHTML = '';
+                
+                selectedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'bg-gray-100 rounded p-2 flex items-center justify-between';
+                    
+                    const fileIcon = file.name.endsWith('.pdf') ? '📄' : '📝';
+                    const fileSize = (file.size / 1024).toFixed(0) + ' KB';
+                    
+                    fileItem.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="mr-2">${fileIcon}</span>
+                            <span class="truncate" title="${file.name}">${file.name}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-xs text-gray-500 mr-2">${fileSize}</span>
+                            <button type="button" class="text-red-500 hover:text-red-700" data-index="${index}">
+                                &times;
+                            </button>
+                        </div>
+                    `;
+                    
+                    filePreview.appendChild(fileItem);
+                    
+                    // Add remove button event
+                    const removeBtn = fileItem.querySelector('button');
+                    removeBtn.addEventListener('click', () => {
+                        selectedFiles.splice(index, 1);
+                        updateFilePreview();
+                    });
+                });
+                
+                // Show or hide the preview section
+                if (selectedFiles.length > 0) {
+                    filePreview.classList.remove('hidden');
+                } else {
+                    filePreview.classList.add('hidden');
+                }
+            }
+            
+            // Handle drag and drop events
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
+            });
+            
+            // Highlight drop area when dragging over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.add('border-blue-500', 'bg-blue-50');
+                }, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.remove('border-blue-500', 'bg-blue-50');
+                }, false);
+            });
+            
+            // Handle dropped files
+            dropArea.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                handleFiles(files);
+            }, false);
+            
+            // Handle file input change
+            fileInput.addEventListener('change', () => {
+                handleFiles(fileInput.files);
+            });
+            
+            // Open file dialog when browse button is clicked
+            browseButton.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // Function to handle selected files
+            function handleFiles(files) {
+                // Convert FileList to array and filter by file type
+                const newFiles = Array.from(files).filter(file => {
+                    const validTypes = ['.pdf', '.txt', 'application/pdf', 'text/plain'];
+                    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                    return validTypes.includes(file.type) || validTypes.includes(fileExt);
+                });
+                
+                // Add to selected files (up to 10)
+                selectedFiles = [...selectedFiles, ...newFiles].slice(0, 10);
+                
+                // Update preview
+                updateFilePreview();
+            }
+            
+            // Close modal on cancel
+            cancelButton.addEventListener('click', () => {
+                document.body.removeChild(modalOverlay);
+            });
+            
+            // Handle form submission
+            uploadForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const datasetName = document.getElementById('dataset-name').value;
+                if (!datasetName) return;
+                
+                if (selectedFiles.length === 0) {
+                    alert('Please select at least one document to process.');
+                    return;
+                }
+                
+                // Create FormData object
+                const formData = new FormData();
+                formData.append('dataset_name', datasetName);
+                
+                // Add files to FormData
+                selectedFiles.forEach(file => {
+                    formData.append('files', file);
+                });
+                
+                // Show loading state
+                const uploadButton = document.getElementById('upload-button');
+                uploadButton.disabled = true;
+                uploadButton.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        Uploading...
+                    </div>
+                `;
+                
+                // Send upload request
+                fetch('/api/upload-documents', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => {
+                    // Check if response is ok
+                    if (!response.ok) {
+                        if (response.headers.get('content-type')?.includes('application/json')) {
+                            return response.json().then(errorData => {
+                                throw new Error(errorData.message || 'Error processing documents');
+                            });
+                        } else {
+                            // If not JSON, get text content
+                            return response.text().then(text => {
+                                throw new Error('Server error: ' + text.substring(0, 100));
+                            });
+                        }
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Close modal
+                    document.body.removeChild(modalOverlay);
+                    
+                    // Get the display name (either original if provided or sanitized)
+                    const displayName = data.original_name || data.dataset;
+                    
+                    // Show success message
+                    addMessage('assistant', `Documents processed successfully: ${data.message}`, null, false, true);
+                    
+                    // Update current dataset to the one just created (use the sanitized name for API calls)
+                    currentDataset = data.dataset;
+                    // But display the original name for user-friendliness
+                    document.getElementById('current-dataset-indicator').textContent = displayName;
+                    
+                    // Update count badge with an approximation
+                    const countBadge = document.getElementById('dataset-count-badge');
+                    const documentCount = data.message.split('text chunks')[0].trim();
+                    countBadge.textContent = `${documentCount} documents`;
+                    countBadge.className = 'ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                    countBadge.classList.remove('hidden');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    
+                    // Keep modal open and show error
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded';
+                    errorMsg.textContent = error.message || 'Error processing documents';
+                    
+                    // Insert before buttons
+                    const buttonsDiv = modalContent.querySelector('.flex.justify-end');
+                    buttonsDiv.parentNode.insertBefore(errorMsg, buttonsDiv);
+                    
+                    // Re-enable button
+                    uploadButton.disabled = false;
+                    uploadButton.textContent = 'Process Documents';
+                });
+            });
+        }
+
+        // Function to handle right-click context menu on chat items
+        function handleChatContextMenu(e) {
+            e.preventDefault();
+            
+            // Get the chat ID from the clicked element
+            const chatId = this.dataset.chatId;
+            if (!chatId) return;
+            
+            // Create a context menu element
+            removeContextMenu(); // Remove any existing context menu
+            
+            const contextMenu = document.createElement('div');
+            contextMenu.id = 'chat-context-menu';
+            contextMenu.className = 'absolute bg-gray-800 rounded shadow-lg p-2 z-50';
+            contextMenu.style.left = `${e.pageX}px`;
+            contextMenu.style.top = `${e.pageY}px`;
+            
+            // Add rename option
+            const renameOption = document.createElement('div');
+            renameOption.className = 'p-2 hover:bg-gray-700 rounded cursor-pointer text-white flex items-center';
+            renameOption.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+                Rename Chat
+            `;
+            
+            renameOption.addEventListener('click', () => {
+                removeContextMenu();
+                openRenameChatPrompt(chatId);
+            });
+            
+            contextMenu.appendChild(renameOption);
+            document.body.appendChild(contextMenu);
+            
+            // Close the context menu when clicking elsewhere
+            document.addEventListener('click', removeContextMenu);
+            
+            // Also close on scroll or resize
+            window.addEventListener('scroll', removeContextMenu, { once: true });
+            window.addEventListener('resize', removeContextMenu, { once: true });
+        }
+        
+        // Remove any open context menu
+        function removeContextMenu() {
+            const existingMenu = document.getElementById('chat-context-menu') || document.getElementById('dataset-context-menu');
+            if (existingMenu) {
+                existingMenu.remove();
+                document.removeEventListener('click', removeContextMenu);
+            }
+        }
+        
+        // Function to submit feedback via email
+        function submitFeedback() {
+            // Create a modal dialog for feedback
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'bg-white rounded-lg shadow-lg max-w-md w-full';
+            modalContent.innerHTML = `
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold mb-4">Submit Feedback</h2>
+                    
+                    <form id="feedback-form" class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2">Feedback Type</label>
+                            <select id="feedback-type" class="w-full border rounded px-3 py-2">
+                                <option value="feature">Feature Request</option>
+                                <option value="improvement">Suggestion for Improvement</option>
+                                <option value="bug">Bug Report</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 mb-2">Your Message</label>
+                            <textarea 
+                                id="feedback-text" 
+                                rows="4" 
+                                class="w-full border rounded px-3 py-2" 
+                                placeholder="Please describe your feedback in detail..."
+                                required
+                            ></textarea>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-4 pt-2">
+                            <button
+                                type="button"
+                                id="cancel-feedback"
+                                class="px-4 py-2 border rounded text-gray-700 hover:bg-gray-100"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Submit
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            modalOverlay.appendChild(modalContent);
+            document.body.appendChild(modalOverlay);
+            
+            // Handle cancel button
+            const cancelButton = modalContent.querySelector('#cancel-feedback');
+            cancelButton.addEventListener('click', () => {
+                document.body.removeChild(modalOverlay);
+            });
+            
+            // Handle form submission
+            const feedbackForm = modalContent.querySelector('#feedback-form');
+            feedbackForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const feedbackType = document.getElementById('feedback-type').value;
+                const feedbackText = document.getElementById('feedback-text').value;
+                
+                if (!feedbackText.trim()) {
+                    alert('Please enter your feedback.');
+                    return;
+                }
+                
+                // Create mailto link with pre-filled content
+                const subject = `MimIA Feedback: ${feedbackType}`;
+                const body = `Feedback Type: ${feedbackType}\n\n${feedbackText}`;
+                
+                const mailtoLink = `mailto:mimia@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                
+                // Open default email client
+                window.location.href = mailtoLink;
+                
+                // Close the modal
+                document.body.removeChild(modalOverlay);
+                
+                // Show a thank you toast
+                const toastMsg = document.createElement('div');
+                toastMsg.className = 'toast-notification';
+                toastMsg.textContent = 'Thank you for your feedback!';
+                document.body.appendChild(toastMsg);
+                
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    document.body.removeChild(toastMsg);
+                }, 3000);
+            });
+        }
+        
+        // Handle right-click context menu on dataset items
+        function handleDatasetContextMenu(e) {
+            e.preventDefault();
+            
+            // Get the dataset info from the clicked element
+            const datasetName = this.dataset.datasetName;
+            const isCustom = this.dataset.isCustom === 'true';
+            
+            if (!datasetName) return;
+            
+            // Create a context menu element
+            removeContextMenu(); // Remove any existing context menu
+            
+            const contextMenu = document.createElement('div');
+            contextMenu.id = 'dataset-context-menu';
+            contextMenu.className = 'absolute bg-gray-800 rounded shadow-lg p-2 z-50';
+            contextMenu.style.left = `${e.pageX}px`;
+            contextMenu.style.top = `${e.pageY}px`;
+            
+            // Only allow deleting custom datasets
+            if (isCustom) {
+                // Add delete option
+                const deleteOption = document.createElement('div');
+                deleteOption.className = 'p-2 hover:bg-gray-700 rounded cursor-pointer text-white flex items-center';
+                deleteOption.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete Dataset
+                `;
+                
+                deleteOption.addEventListener('click', () => {
+                    removeContextMenu();
+                    confirmDeleteDataset(datasetName);
+                });
+                
+                contextMenu.appendChild(deleteOption);
+            } else {
+                // For default datasets, show a disabled option
+                const disabledOption = document.createElement('div');
+                disabledOption.className = 'p-2 text-gray-500 rounded flex items-center opacity-70';
+                disabledOption.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Default Datasets Cannot Be Deleted
+                `;
+                
+                contextMenu.appendChild(disabledOption);
+            }
+            
+            // If the context menu has no items, don't show it
+            if (contextMenu.children.length === 0) {
+                return;
+            }
+            
+            document.body.appendChild(contextMenu);
+            
+            // Close the context menu when clicking elsewhere
+            document.addEventListener('click', removeContextMenu);
+            
+            // Also close on scroll or resize
+            window.addEventListener('scroll', removeContextMenu, { once: true });
+            window.addEventListener('resize', removeContextMenu, { once: true });
+        }
+        
+        // Function to confirm and delete a dataset
+        function confirmDeleteDataset(datasetName) {
+            if (confirm(`Are you sure you want to delete the dataset "${datasetName}"? This action cannot be undone.`)) {
+                deleteDataset(datasetName);
+            }
+        }
+        
+        // Function to delete a dataset
+        async function deleteDataset(datasetName) {
+            try {
+                const response = await fetch(`/api/datasets/${encodeURIComponent(datasetName)}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Show success toast
+                    const toastMsg = document.createElement('div');
+                    toastMsg.className = 'toast-notification';
+                    toastMsg.textContent = `Dataset "${datasetName}" deleted successfully`;
+                    document.body.appendChild(toastMsg);
+                    
+                    // Remove toast after 3 seconds
+                    setTimeout(() => {
+                        document.body.removeChild(toastMsg);
+                    }, 3000);
+                    
+                    // If the current dataset was deleted, switch to Default
+                    if (currentDataset === datasetName) {
+                        currentDataset = DEFAULT_DATASETS[0].name;
+                        document.getElementById('current-dataset-indicator').textContent = currentDataset;
+                        
+                        // Add system message about dataset change
+                        addMessage('assistant', `Switched to default dataset: ${currentDataset}`, null, false, true);
+                    }
+                    
+                    // Refresh the datasets view (if modal is open)
+                    viewDatasets();
+                } else {
+                    // Show error
+                    alert(`Error deleting dataset: ${result.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error deleting dataset:', error);
+                alert('Failed to delete dataset. Please try again.');
+            }
+        }
+        
+        // Function to rename a chat from the sidebar
+        function openRenameChatPrompt(chatId) {
+            // Find the chat in our data
+            const chat = chats.find(c => c.id === chatId);
+            if (!chat) return;
+            
+            // Get the current title
+            const currentTitle = chat.title || 'Untitled Chat';
+            
+            // Show input prompt for new title
+            const newTitle = prompt('Enter a new title for this chat:', currentTitle);
+            
+            // Update the chat title if a new name was provided
+            if (newTitle && newTitle.trim() !== '' && newTitle !== currentTitle) {
+                renameChat(chatId, newTitle.trim());
+            }
+        }
+        
+        // Function to rename the current chat (from the top header)
+        function renameChatPrompt() {
+            // Don't do anything if no chat is selected
+            if (!currentChatId) return;
+            
+            // Open the rename prompt for the current chat
+            openRenameChatPrompt(currentChatId);
+        }
+        
+        // Function to update the chat title in the UI and backend
+        async function renameChat(chatId, newTitle) {
+            try {
+                // Update in the backend
+                const response = await fetch(`/api/chats/${chatId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: newTitle
+                    }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update chat title');
+                }
+                
+                // Update the UI
+                currentChatTitle.textContent = newTitle;
+                
+                // Find and update the chat in the sidebar
+                const chatItem = document.querySelector(`.chat-item[data-chat-id="${chatId}"]`);
+                if (chatItem) {
+                    const titleEl = chatItem.querySelector('.text-sm.font-medium');
+                    if (titleEl) {
+                        titleEl.textContent = newTitle;
+                    }
+                }
+                
+                // Show success toast
+                const toastMsg = document.createElement('div');
+                toastMsg.className = 'toast-notification';
+                toastMsg.textContent = 'Chat renamed successfully';
+                document.body.appendChild(toastMsg);
+                
+                // Remove toast after 3 seconds
+                setTimeout(() => {
+                    document.body.removeChild(toastMsg);
+                }, 3000);
+                
+                // Reload the chats list to reflect the changes
+                await loadChats();
+                
+            } catch (error) {
+                console.error('Error renaming chat:', error);
+                alert('Failed to rename chat. Please try again.');
+            }
+        }
+        
+        // Drag and drop functionality for chat items
+        let draggedChatId = null;
+        
+        // Handle drag start event
+        function handleDragStart(e) {
+            // Store the chat ID being dragged
+            draggedChatId = this.dataset.chatId;
+            
+            // Set the drag image and data
+            e.dataTransfer.setData('text/plain', draggedChatId);
+            e.dataTransfer.effectAllowed = 'move';
+            
+            // Add a class to style the dragged element
+            this.classList.add('dragging');
+            
+            // Give it a small delay to apply the styling
+            setTimeout(() => {
+                this.classList.add('opacity-50');
+            }, 0);
+        }
+        
+        // Handle drag end event
+        function handleDragEnd() {
+            // Remove the styling classes
+            this.classList.remove('dragging', 'opacity-50');
+            
+            // Reset folder highlights
+            document.querySelectorAll('.folder-item').forEach(folder => {
+                folder.classList.remove('drag-over');
+            });
+        }
+        
+        // Handle drag over event for folder items
+        function handleDragOver(e) {
+            if (draggedChatId) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                // Highlight the folder being dragged over
+                this.classList.add('drag-over');
+            }
+        }
+        
+        // Handle drag leave event for folder items
+        function handleDragLeave() {
+            // Remove the highlight
+            this.classList.remove('drag-over');
+        }
+        
+        // Handle drop event for folder items
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            // Remove highlight
+            this.classList.remove('drag-over');
+            
+            // Get the target folder ID
+            const targetFolderId = this.dataset.folderId;
+            
+            // Don't do anything if dragging to the same folder
+            const draggedChatEl = document.querySelector(`.chat-item[data-chat-id="${draggedChatId}"]`);
+            if (draggedChatEl && draggedChatEl.dataset.folderId === targetFolderId) {
+                draggedChatId = null;
+                return;
+            }
+            
+            // Move the chat to the new folder
+            if (draggedChatId && targetFolderId) {
+                // Find the target folder's chat container
+                const targetFolderChats = document.querySelector(`.folder-chats[data-folder-id="${targetFolderId}"]`);
+                
+                // Make sure the target folder is expanded
+                if (targetFolderChats) {
+                    // Ensure the folder is expanded
+                    targetFolderChats.style.display = 'block';
+                    
+                    // Update expand/collapse indicator
+                    const folderHeader = document.querySelector(`.folder-item[data-folder-id="${targetFolderId}"]`);
+                    if (folderHeader) {
+                        const expandIcon = folderHeader.querySelector('.folder-expand-icon');
+                        if (expandIcon) {
+                            expandIcon.textContent = '▼';
+                        }
+                    }
+                    
+                    // Remove "No chats" message if it exists
+                    const noChatsMsg = targetFolderChats.querySelector('div.text-gray-500');
+                    if (noChatsMsg && noChatsMsg.textContent === 'No chats') {
+                        noChatsMsg.remove();
+                    }
+                }
+                
+                // Call the API to update the folder
+                moveChat(draggedChatId, targetFolderId);
+                
+                // Visual feedback
+                const folderName = folders.find(f => f.id === targetFolderId)?.name || 'Unknown folder';
+                const toastMsg = document.createElement('div');
+                toastMsg.className = 'toast-notification';
+                toastMsg.textContent = `Chat moved to "${folderName}"`;
+                document.body.appendChild(toastMsg);
+                
+                // Remove the toast after 3 seconds
+                setTimeout(() => {
+                    document.body.removeChild(toastMsg);
+                }, 3000);
+            }
+            
+            // Reset dragged chat ID
+            draggedChatId = null;
+        }
+    </script>
+</body>
+</html>

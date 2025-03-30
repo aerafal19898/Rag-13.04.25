@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DEBUG=False
+      # Add any other environment variables needed
+      # - OPENAI_API_KEY=your_api_key
+    restart: always
