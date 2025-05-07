@@ -1,0 +1,19 @@
+api:
+  debug: true
+  host: 0.0.0.0
+  port: 8000
+auth:
+  jwt_access_token_expire_minutes: 30
+  jwt_algorithm: HS256
+  jwt_secret_key: your-secret-key
+database:
+  host: localhost
+  name: test_db
+  port: 5432
+db:
+  path: data/database.db
+  type: sqlite
+model:
+  path: models
+  type: deepseek
+  version: '1.0'

@@ -54,3 +54,42 @@ Dockerfile
 # Temporary files
 .DS_Store
 Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv
+ENV/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Secrets / Local Config
+.env
+*.key
+config.yaml
+config.json
+data/
+reports/
+*.db
+*.log
+*.sqlite3
+
+# IDE / Editor files
+.idea/
+.vscode/
+
+# Test artifacts
+htmlcov/
+.pytest_cache/
+.coverage
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

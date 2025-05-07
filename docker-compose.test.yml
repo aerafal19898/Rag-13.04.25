@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB:   testdb
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:6
+    command: ["redis-server", "--requirepass", "testpassword"]
+    ports:
+      - "6379:6379"
+
+  chromadb:
+    image: ghcr.io/chroma-core/chroma:latest
+    environment:
+      IS_PERSISTENT: "FALSE"
+    ports:
+      - "8000:8000"

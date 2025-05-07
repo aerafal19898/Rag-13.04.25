@@ -1,0 +1,26 @@
+{
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "debug": true
+  },
+  "auth": {
+    "jwt_secret_key": "your-secret-key",
+    "jwt_algorithm": "HS256",
+    "jwt_access_token_expire_minutes": 30
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "test_db"
+  },
+  "db": {
+    "type": "sqlite",
+    "path": "data/database.db"
+  },
+  "model": {
+    "path": "models",
+    "type": "deepseek",
+    "version": "1.0"
+  }
+}

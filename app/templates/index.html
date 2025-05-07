@@ -56,7 +56,7 @@
         <div id="sidebar" class="w-72 bg-gray-800 text-white flex flex-col">
             <!-- Logo and title -->
             <div class="p-4 border-b border-gray-700 flex flex-col items-center">
-                <h1 class="text-xl font-bold mb-2">MimIA</h1>
+                <h1 class="text-xl font-bold mb-2">QueryLex</h1>
                 <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
                     <img id="app-logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="max-w-full max-h-full">
                 </div>
@@ -1770,10 +1770,10 @@
                 }
                 
                 // Create mailto link with pre-filled content
-                const subject = `MimIA Feedback: ${feedbackType}`;
+                const subject = `QueryLex Feedback: ${feedbackType}`;
                 const body = `Feedback Type: ${feedbackType}\n\n${feedbackText}`;
                 
-                const mailtoLink = `mailto:mimia@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                const mailtoLink = `mailto:querylex@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                 
                 // Open default email client
                 window.location.href = mailtoLink;

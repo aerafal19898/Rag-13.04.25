@@ -1,14 +1,97 @@
-version: '3'
+# ********** Start of Updated Content **********
+version: '3.8'
 
+# Defines the services (containers) that make up the application
 services:
+  # The main web application service (Flask) - Kept from your original file
   web:
-    build: .
-    ports:
-      - "5000:5000"
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - ./data:/app/data
     environment:
-      - DEBUG=False
-      # Add any other environment variables needed
-      # - OPENAI_API_KEY=your_api_key
-    restart: always
+      # Database connection settings
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: testuser
+      DB_PASSWORD: testpassword
+      DB_NAME: testdb
+      # Redis connection settings
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      # ChromaDB connection settings
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: "8000"
+      # JWT secret with default for testing
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-testsecretkey}"
+    networks:
+      - test_network
+
+  # Redis service for caching - Kept from your original file
+  redis:
+    image: redis:7.2-alpine
+    container_name: test_redis # Added container name
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    # Removed restart: unless-stopped for simplicity during testing
+    networks:
+      - test_network
+
+  # --- Added PostgreSQL service for testing ---
+  postgres:
+    image: postgres:15
+    container_name: test_postgres
+    environment:
+      POSTGRES_USER: testuser      # Use this user for tests
+      POSTGRES_PASSWORD: testpassword # Use this password for tests
+      POSTGRES_DB: testdb          # Use this database name for tests
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - test_network
+
+  # --- Added ChromaDB service for testing ---
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: test_chromadb
+    ports:
+      - "8000:8000" # Map to port 8000 needed by tests
+    # environment: # Add if specific Chroma config needed
+    #   - ANONYMIZED_TELEMETRY=False
+    networks:
+      - test_network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:stable-alpine
+    container_name: test_nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+    networks:
+      - test_network
+
+# Define named volumes
+volumes:
+  redis_data:
+  postgres_data: # Added volume for PostgreSQL
+
+# --- Added common network ---
+networks:
+  test_network:
+    driver: bridge
+
+# --- Notes for Local Development ---
+# To run: `docker-compose up -d`
+# To stop: `docker-compose down`
+# Ensure necessary environment variables are set in your test running session (PowerShell).
+# ********** End of Updated Content **********x

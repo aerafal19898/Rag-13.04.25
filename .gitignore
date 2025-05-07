@@ -45,15 +45,30 @@ app.log
 *.sqlite
 
 # Chroma database
-data/chroma/
+data/chroma/*
+!data/chroma/.gitkeep
 
-# Uploaded and processed files
-data/uploads/
-data/secure/
-data/chats/
-data/audit_logs/
-data/credits/transactions/
-data/feedback/
+# Data directories - ensure structure is pushed but not content
+data/uploads/*
+data/secure/*
+data/chats/*
+data/audit_logs/*
+data/credits/transactions/*
+data/feedback/*
+data/users/*
+data/documents/*
+!data/uploads/.gitkeep
+!data/secure/.gitkeep
+!data/chats/.gitkeep
+!data/audit_logs/.gitkeep
+!data/credits/transactions/.gitkeep
+!data/feedback/.gitkeep
+!data/users/.gitkeep
+!data/documents/.gitkeep
+
+# Keep important model registry data
+!data/model_registry/
+!data/api_contracts/
 
 # Development
 .vscode/
@@ -72,3 +87,7 @@ docker-volumes/
 # Test files
 .coverage
 htmlcov/
+
+# Temporary directories
+Old\ Shit/
+28.02.25/

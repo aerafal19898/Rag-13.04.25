@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 class AuditLogger:
-    """Audit logging for security and compliance tracking."""
+    """Audit logging for security and compliance tracking. Now supports compliance monitoring and incident response logging (task 2.3)."""
     
     def __init__(self, log_dir: Optional[str] = None, enabled: bool = True):
         """Initialize the audit logger.
@@ -484,3 +484,25 @@ class AuditLogger:
                         pass
         
         return deleted_count
+
+    def log_compliance_check(self, check_name: str, status: str, details: Optional[Dict[str, Any]] = None) -> str:
+        """Log a compliance check event."""
+        return self.log_event(
+            event_type="compliance",
+            action=check_name,
+            status=status,
+            details=details
+        )
+
+    def get_compliance_events(self, start_time: Optional[float] = None, end_time: Optional[float] = None, status: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Retrieve compliance-related audit events."""
+        return self.get_events(start_time=start_time, end_time=end_time, event_type="compliance", status=status, limit=limit)
+
+    def log_incident_response(self, incident_type: str, action: str, status: str, details: Optional[Dict[str, Any]] = None) -> str:
+        """Log an incident response action."""
+        return self.log_event(
+            event_type="incident_response",
+            action=action,
+            status=status,
+            details={"incident_type": incident_type, **(details or {})}
+        )

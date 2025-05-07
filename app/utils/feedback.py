@@ -15,7 +15,7 @@ from pathlib import Path
 from datetime import datetime
 
 class FeedbackManager:
-    """Manage user feedback and suggestions."""
+    """Manage user feedback and suggestions. Now supports aggregation of user satisfaction metrics (task 2.2)."""
     
     def __init__(
         self, 
@@ -537,3 +537,16 @@ class FeedbackManager:
             return False, "Feedback appears to contain spam or prohibited content."
         
         return True, ""
+    
+    def get_satisfaction_summary(self) -> Dict[str, Any]:
+        """Aggregate user satisfaction metrics (average rating, count, etc.)."""
+        feedback_list = self.list_feedback(feedback_type=None)
+        ratings = [f["rating"] for f in feedback_list if f.get("rating") is not None]
+        if not ratings:
+            return {"count": 0, "average": None, "min": None, "max": None}
+        return {
+            "count": len(ratings),
+            "average": sum(ratings) / len(ratings),
+            "min": min(ratings),
+            "max": max(ratings)
+        }
